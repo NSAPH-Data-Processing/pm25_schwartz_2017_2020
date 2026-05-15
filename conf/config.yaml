@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+  - _global: zcta_local
+
+show_progress: false
+plot_output: false
+
+hydra:
+  run:
+    dir: logs/${now:%Y-%m-%d}/${now:%H-%M-%S}

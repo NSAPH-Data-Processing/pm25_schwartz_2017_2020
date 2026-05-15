@@ -1,0 +1,5 @@
+# @package _global_
+defaults:
+  - /datapaths: cannon
+  - /shapefiles: county
+  - /pm25_source: schwartz_v1

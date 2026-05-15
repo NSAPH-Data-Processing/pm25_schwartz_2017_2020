@@ -1,0 +1,11 @@
+name: local
+base_path: data
+
+dirs:
+  input:
+    raw: null
+    shapefiles: null
+  intermediate: null
+  output:
+    zcta_yearly: null
+    county_yearly: null

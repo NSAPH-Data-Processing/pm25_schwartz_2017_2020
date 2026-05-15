@@ -1,0 +1,5 @@
+polygon_name: zcta
+prefix: us_shapefile__census__zcta_yearly__
+years:
+  - 2010
+  - 2020

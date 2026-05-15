@@ -1,0 +1,5 @@
+# @package _global_
+defaults:
+  - /datapaths: local
+  - /shapefiles: zcta
+  - /pm25_source: schwartz_v1
