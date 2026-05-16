@@ -1,0 +1,17 @@
+variable: pm25
+temporal_freq: yearly
+
+# Raw publisher artefact
+raw:
+  filename_pattern: TBD  # pending source confirmation
+
+# Optional: pin a canonical raster for grid derivation. When unset, the
+# framework derives the canonical grid from the first raw file processed and
+# persists it under {base_path}/intermediate/.grids/<variant>.json.
+# grid_ref: path/to/canonical/raster.tif
+
+# Mismatch policy. Default: fail loudly when a raw file's grid does not match
+# the canonical. Set resample: true (and resample_method) to opt into
+# resampling.
+resample: false
+# resample_method: bilinear  # bilinear | nearest | average | cubic | lanczos | mode

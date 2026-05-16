@@ -1,5 +1,9 @@
 polygon_name: county
-prefix: us_shapefile__census__county_yearly__
-years:
-  - 2010
-  - 2020
+
+# Raw publisher pattern (TBD pending source confirmation).
+raw:
+  filename_pattern: TBD
+  id_column: TBD
+
+# Vintage selection policy: exact | nearest_below
+vintage_policy: exact
