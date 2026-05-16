@@ -5,6 +5,17 @@ defaults:
 show_progress: false
 plot_output: false
 
+# Aggregation parameters (see 08_spatial_aggregations.md §2b).
+# Default upsample policy for all-touched rasterization. Bundles in _global/
+# can override (e.g., `upsample: {k: 16}`) when a specific run needs different
+# behavior.
+upsample:
+  target_samples: 100   # minimum effective sample count per polygon
+  quantile: 0.10        # area quantile to satisfy
+  k_min: 1
+  k_max: 16
+  # k: 16               # optional explicit override; skips auto-derivation
+
 hydra:
   run:
     dir: logs/${now:%Y-%m-%d}/${now:%H-%M-%S}
