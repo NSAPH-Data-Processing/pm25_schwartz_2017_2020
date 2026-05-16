@@ -1,11 +1,21 @@
-name: local
 base_path: data
 
 dirs:
-  input:
-    raw: null
+  raw:
+    daily: null
+    monthly: null
+    yearly: null
     shapefiles: null
-  intermediate: null
+  input:
+    daily: null
+    monthly: null
+    yearly: null
+    shapefiles: null
+  intermediate:
+    daily: null
+    monthly: null
+    yearly: null
   output:
-    zcta_yearly: null
-    county_yearly: null
+    daily: null
+    monthly: null
+    yearly: null
