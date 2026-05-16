@@ -1,5 +1,5 @@
 # @package _global_
 defaults:
   - /datapaths: local
-  - /shapefiles: zcta
-  - /rasters: yearly
+  - /polygons: zcta
+  - /grids: yearly

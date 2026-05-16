@@ -1,5 +1,5 @@
 # @package _global_
 defaults:
   - /datapaths: cannon_zcta
-  - /shapefiles: zcta
-  - /rasters: yearly
+  - /polygons: zcta
+  - /grids: yearly

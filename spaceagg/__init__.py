@@ -4,7 +4,7 @@ Implements the design decisions from 08_spatial_aggregations.md:
   - CRS alignment (polygons → raster).
   - Upsampled all-touched rasterization producing integer multiplicities n_i.
   - K selection from the polygon-area distribution (Step 10b).
-  - Polygon→cell mapping cache keyed by (grid_fp × shapefile_fp × k).
+  - Polygon→cell mapping cache keyed by (grid_fp × polygons_fp × k).
   - Multiplicity-weighted aggregation with no-data handling.
 
 Submodules are loaded on demand to keep heavy dependencies (rasterio, geopandas,

@@ -2,15 +2,17 @@ base_path: data/zcta
 
 dirs:
   raw:
-    daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/daily
-    monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/monthly
-    yearly:  /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/yearly
-    shapefiles: /n/dominici_lab/lab/lego/geoboundaries/us_geoboundaries__census/raw/zcta
+    grids:
+      daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/daily
+      monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/monthly
+      yearly:  /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/yearly
+    polygons: /n/dominici_lab/lab/lego/geoboundaries/us_geoboundaries__census/raw/zcta
   input:
-    daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/daily
-    monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/monthly
-    yearly:  /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/yearly
-    shapefiles: /n/dominici_lab/lab/lego/geoboundaries/us_geoboundaries__census/input/zcta
+    grids:
+      daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/daily
+      monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/monthly
+      yearly:  /n/dominici_lab/lab/lego/environmental/pm25__schwartz/input/yearly
+    polygons: /n/dominici_lab/lab/lego/geoboundaries/us_geoboundaries__census/input/zcta
   intermediate:
     daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/.intermediate/zcta_daily
     monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/.intermediate/zcta_monthly

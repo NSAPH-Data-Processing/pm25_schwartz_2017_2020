@@ -1,5 +1,5 @@
 # @package _global_
 defaults:
   - /datapaths: cannon_county
-  - /shapefiles: county
-  - /rasters: yearly
+  - /polygons: county
+  - /grids: yearly

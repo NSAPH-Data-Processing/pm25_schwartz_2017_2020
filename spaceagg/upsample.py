@@ -27,7 +27,7 @@ def derive_k(
     Parameters
     ----------
     polygon_areas
-        Area of every polygon in the shapefile, in the same units as ``cell_area``.
+        Area of every polygon in the polygon set, in the same units as ``cell_area``.
     cell_area
         Area of one native raster cell.
     target_samples

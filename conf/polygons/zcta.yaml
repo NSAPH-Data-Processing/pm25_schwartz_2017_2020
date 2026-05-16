@@ -2,7 +2,7 @@ polygon_name: zcta
 
 # Raw publisher pattern (TBD pending source confirmation).
 # raw.filename_pattern uses {vintage} as the vintage wildcard;
-# raw.id_column is renamed to the canonical key during standardize_shapefile.
+# raw.id_column is renamed to the canonical key during standardize_polygons.
 raw:
   filename_pattern: TBD
   id_column: TBD

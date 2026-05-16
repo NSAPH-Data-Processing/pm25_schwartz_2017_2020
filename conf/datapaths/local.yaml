@@ -2,15 +2,17 @@ base_path: data
 
 dirs:
   raw:
-    daily: null
-    monthly: null
-    yearly: null
-    shapefiles: null
+    grids:
+      daily: null
+      monthly: null
+      yearly: null
+    polygons: null
   input:
-    daily: null
-    monthly: null
-    yearly: null
-    shapefiles: null
+    grids:
+      daily: null
+      monthly: null
+      yearly: null
+    polygons: null
   intermediate:
     daily: null
     monthly: null

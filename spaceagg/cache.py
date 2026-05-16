@@ -1,6 +1,6 @@
 """Polygon→cell mapping cache.
 
-Keyed by (grid_fingerprint × shapefile_fingerprint × k). Two files per cache
+Keyed by (grid_fingerprint × polygons_fingerprint × k). Two files per cache
 entry: a parquet carrying the (polygon_id, row, col, n) triples, and a JSON
 sidecar carrying the K-derivation metadata (see 08_spatial_aggregations.md
 §"Persisting the chosen K").
@@ -18,11 +18,11 @@ import pyarrow.parquet as pq
 def mapping_paths(
     intermediate_root: str | Path,
     grid_fp: str,
-    shape_fp: str,
+    polygons_fp: str,
     k: int,
 ) -> tuple[Path, Path]:
     """Return the (parquet, json) paths for this cache key."""
-    stem = f"{grid_fp}__{shape_fp}__k{k}"
+    stem = f"{grid_fp}__{polygons_fp}__k{k}"
     root = Path(intermediate_root) / ".mappings"
     return root / f"{stem}.parquet", root / f"{stem}.json"
 
