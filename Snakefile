@@ -11,20 +11,20 @@ with initialize(version_base=None, config_path="conf"):
     cfg = compose(config_name="config", overrides=overrides)
 
 base_path = cfg.datapaths.base_path
-polygon_name = cfg.shapefiles.polygon_name
-variable = cfg.rasters.variable
-temporal_freq = cfg.rasters.temporal_freq
+polygon_name = cfg.polygons.polygon_name
+variable = cfg.grids.variable
+temporal_freq = cfg.grids.temporal_freq
 script_overrides = " ".join(overrides)
 
-grid_json = f"{base_path}/input/{temporal_freq}/grid.json"
+grid_json = f"{base_path}/input/grids/{temporal_freq}/grid.json"
 
-raster_pattern = (
-    f"{base_path}/input/{temporal_freq}/"
+grid_pattern = (
+    f"{base_path}/input/grids/{temporal_freq}/"
     f"{variable}__{temporal_freq}__{{year}}.tif"
 )
 
-shapefile_pattern = f"{base_path}/input/shapefiles/{polygon_name}__{{year}}.gpkg"
-shapefile_json_pattern = f"{base_path}/input/shapefiles/{polygon_name}__{{year}}.json"
+polygons_pattern = f"{base_path}/input/polygons/{polygon_name}__{{year}}.gpkg"
+polygons_json_pattern = f"{base_path}/input/polygons/{polygon_name}__{{year}}.json"
 
 output_pattern = (
     f"{base_path}/output/{temporal_freq}/"
@@ -51,46 +51,46 @@ rule generate_grid_json:
         f"{script_overrides} &> {{log}}"
 
 
-rule standardize_raster:
+rule standardize_grid:
     input:
         grid_json,
     output:
-        raster_pattern,
+        grid_pattern,
     log:
-        f"logs/standardize_raster_{temporal_freq}_{{year}}.log",
+        f"logs/standardize_grid_{temporal_freq}_{{year}}.log",
     shell:
-        "PYTHONPATH=. python src/standardize_raster.py "
+        "PYTHONPATH=. python src/standardize_grid.py "
         f"{script_overrides} year={{wildcards.year}} &> {{log}}"
 
 
-rule standardize_shapefile:
+rule standardize_polygons:
     output:
-        shapefile_pattern,
+        polygons_pattern,
     log:
-        f"logs/standardize_shapefile_{polygon_name}_{{year}}.log",
+        f"logs/standardize_polygons_{polygon_name}_{{year}}.log",
     shell:
-        "PYTHONPATH=. python src/standardize_shapefile.py "
+        "PYTHONPATH=. python src/standardize_polygons.py "
         f"{script_overrides} year={{wildcards.year}} &> {{log}}"
 
 
-rule generate_shapefile_json:
+rule generate_polygons_json:
     input:
-        shapefile_pattern,
+        polygons_pattern,
     output:
-        shapefile_json_pattern,
+        polygons_json_pattern,
     log:
-        f"logs/generate_shapefile_json_{polygon_name}_{{year}}.log",
+        f"logs/generate_polygons_json_{polygon_name}_{{year}}.log",
     shell:
-        "PYTHONPATH=. python src/generate_shapefile_json.py "
+        "PYTHONPATH=. python src/generate_polygons_json.py "
         f"{script_overrides} year={{wildcards.year}} &> {{log}}"
 
 
 rule aggregate:
     input:
-        raster         = raster_pattern,
-        shapefile      = shapefile_pattern,
-        shapefile_json = shapefile_json_pattern,
-        grid_json      = grid_json,
+        grid          = grid_pattern,
+        polygons      = polygons_pattern,
+        polygons_json = polygons_json_pattern,
+        grid_json     = grid_json,
     output:
         output_pattern,
     log:
