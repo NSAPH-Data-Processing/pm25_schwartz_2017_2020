@@ -1,0 +1,19 @@
+name: pm25_schwartz_2017_2020
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - snakemake-minimal
+  - hydra-core
+  - omegaconf
+  - numpy
+  - pandas
+  - geopandas
+  - rasterio
+  - pyproj
+  - shapely
+  - pyarrow
+  - tqdm
+  - pip
+  - pip:
+      - pytest
