@@ -2,4 +2,4 @@
 defaults:
   - /datapaths: local
   - /shapefiles: zcta
-  - /input: yearly
+  - /rasters: yearly

@@ -2,4 +2,4 @@
 defaults:
   - /datapaths: cannon_county
   - /shapefiles: county
-  - /input: yearly
+  - /rasters: yearly

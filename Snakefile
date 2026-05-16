@@ -12,8 +12,8 @@ with initialize(version_base=None, config_path="conf"):
 
 base_path = cfg.datapaths.base_path
 polygon_name = cfg.shapefiles.polygon_name
-variable = cfg.input.variable
-temporal_freq = cfg.input.temporal_freq
+variable = cfg.rasters.variable
+temporal_freq = cfg.rasters.temporal_freq
 script_overrides = " ".join(overrides)
 
 grid_json = f"{base_path}/input/{temporal_freq}/grid.json"
