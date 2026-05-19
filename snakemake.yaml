@@ -1,3 +1,22 @@
-global_: zcta_local
+# Snakemake configfile (DD-4 — repo-root location; not under conf/).
+#
+# Per-cadence sections: each section declares the bundle to compose and the
+# target enumeration for that cadence. The Snakefile reads only the sections it
+# runs; pipelines that don't ship a given cadence simply omit that section.
+#
+# `yearly.years`     — explicit list of years (the publisher's yearly archive
+#                      lists every year as its own file).
+# `daily.start/end`  — date interval (the daily target list expands continuously
+#                      between these dates, inclusive). Matches what the
+#                      publisher ships per cadence; e.g., Schwartz's daily
+#                      archives cover 2017 in full and only Jan–Mar 2018, so
+#                      the interval below stops at 2018-03-31.
 
-years: [2017, 2018, 2019, 2020]
+yearly:
+  global_: zcta_local
+  years: [2017, 2018, 2019, 2020]
+
+daily:
+  global_: zcta_local_daily
+  start: 2018-01-01
+  end: 2018-03-31
