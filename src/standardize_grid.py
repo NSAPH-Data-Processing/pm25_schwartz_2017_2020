@@ -3,7 +3,7 @@
 For Case-C-style centroid sources (publisher ships POINT centroids + per-surface
 .dat value tables), this script:
 
-1. Reads the precomputed resample lookup from `intermediate/.cache/grid_resample_lookup.parquet`
+1. Reads the precomputed resample lookup from `input/grids/<temporal_freq>/grid_resample_lookup.parquet`
    (built once by `build_grid_resample_lookup.py`).
 2. Reads the per-surface .dat (one float per line, fid-indexed; line N = value at fid N).
 3. Scatters values onto the canonical (height, width) array via the lookup.
@@ -12,6 +12,10 @@ For Case-C-style centroid sources (publisher ships POINT centroids + per-surface
 The lookup encodes the resample (nearest-neighbour with max-distance coverage
 mask) — no KDTree or interpolation work per surface; just a parquet read + array
 indexing. ~1–3 s per surface vs ~80 s if the tree were rebuilt each time.
+
+Note: the canonical target grid is declared in cfg (`target_crs`, `cell_size`,
+`bounds`). The publisher's origin CRS is inferred at lookup-build time by
+inspecting the raw file directly — not declared in cfg.
 """
 from __future__ import annotations
 
@@ -29,7 +33,7 @@ from omegaconf import DictConfig
 LOGGER = logging.getLogger(__name__)
 
 
-def standardize(cfg: DictConfig, timestamp: str, dat_path: Path) -> None:
+def standardize(cfg: DictConfig, variable: str, timestamp: str, dat_path: Path) -> None:
     base_path = Path(cfg.datapaths.base_path)
 
     # --- inputs ---
@@ -58,7 +62,11 @@ def standardize(cfg: DictConfig, timestamp: str, dat_path: Path) -> None:
     out_blockx = int(tif.blockxsize)
     out_blocky = int(tif.blockysize)
 
-    variable = list(cfg.grids.variables.values())[0]
+    if variable not in cfg.grids.variables:
+        raise KeyError(
+            f"variable={variable!r} not in cfg.grids.variables "
+            f"(keys: {list(cfg.grids.variables.keys())})"
+        )
     out_path = (
         base_path
         / "input"
@@ -68,7 +76,9 @@ def standardize(cfg: DictConfig, timestamp: str, dat_path: Path) -> None:
     )
 
     LOGGER.info(
-        "standardize_grid timestamp=%s target_crs=EPSG:%d cell_size=%g bounds=(%g,%g,%g,%g)",
+        "standardize_grid variable=%s timestamp=%s target_crs=EPSG:%d "
+        "cell_size=%g bounds=(%g,%g,%g,%g)",
+        variable,
         timestamp,
         target_epsg,
         cell_size,
@@ -132,9 +142,10 @@ def standardize(cfg: DictConfig, timestamp: str, dat_path: Path) -> None:
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
+    variable = str(cfg.variable)
     timestamp = str(cfg.timestamp)
     dat_path = Path(cfg.dat_path)
-    standardize(cfg, timestamp, dat_path)
+    standardize(cfg, variable, timestamp, dat_path)
 
 
 if __name__ == "__main__":
