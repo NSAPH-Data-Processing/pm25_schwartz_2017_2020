@@ -12,6 +12,8 @@ change). Output: `{base_path}/intermediate/.cache/grid_resample_lookup.parquet`.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from pathlib import Path
 
@@ -19,10 +21,38 @@ import geopandas as gpd
 import hydra
 import numpy as np
 import pandas as pd
+from affine import Affine
 from omegaconf import DictConfig
 from scipy.spatial import cKDTree
 
 LOGGER = logging.getLogger(__name__)
+
+_GRID_FINGERPRINT_DESCRIPTION = (
+    "sha256-16 over '|'-joined: epsg=<int>, "
+    "transform=(a,b,c,d,e,f) with %.6f formatting, "
+    "shape=(height,width)"
+)
+
+
+def _grid_fingerprint(epsg: int, transform: Affine, shape: tuple[int, int]) -> str:
+    """Stable 16-char hash of (CRS, transform, shape).
+
+    Algorithm documented in `_GRID_FINGERPRINT_DESCRIPTION` and emitted alongside
+    the fingerprint in `grid.json` (DD-16) so downstream consumers can verify
+    or re-implement.
+    """
+    parts = [
+        f"epsg={epsg}",
+        f"a={transform.a:.6f}",
+        f"b={transform.b:.6f}",
+        f"c={transform.c:.6f}",
+        f"d={transform.d:.6f}",
+        f"e={transform.e:.6f}",
+        f"f={transform.f:.6f}",
+        f"h={shape[0]}",
+        f"w={shape[1]}",
+    ]
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
 def build(cfg: DictConfig) -> None:
@@ -30,7 +60,6 @@ def build(cfg: DictConfig) -> None:
 
     # --- raw side ---
     raw_grid_cfg = cfg.grids.raw.grid
-    origin_epsg = int(raw_grid_cfg.origin_crs)
     raw_grid_path = base_path / "raw" / "grids" / raw_grid_cfg.filename
 
     # --- canonical side ---
@@ -56,11 +85,13 @@ def build(cfg: DictConfig) -> None:
     out_path = (
         base_path / "input" / "grids" / temporal_freq / "grid_resample_lookup.parquet"
     )
+    grid_json_path = (
+        base_path / "input" / "grids" / temporal_freq / "grid.json"
+    )
 
     LOGGER.info(
-        "build_grid_resample_lookup origin_crs=EPSG:%d target_crs=EPSG:%d "
-        "cell_size=%g bounds=(%g,%g,%g,%g) method=%s",
-        origin_epsg,
+        "build_grid_resample_lookup target_crs=EPSG:%d cell_size=%g "
+        "bounds=(%g,%g,%g,%g) method=%s",
         target_epsg,
         cell_size,
         xmin,
@@ -70,31 +101,41 @@ def build(cfg: DictConfig) -> None:
         resample_method,
     )
 
-    # --- canonical grid shape ---
+    # --- canonical grid shape + transform + fingerprint ---
     width = int(round((xmax - xmin) / cell_size))
     height = int(round((ymax - ymin) / cell_size))
-    LOGGER.info("canonical shape=(%d, %d)", height, width)
+    transform = Affine(cell_size, 0.0, xmin, 0.0, -cell_size, ymax)
+    grid_fp = _grid_fingerprint(target_epsg, transform, (height, width))
+    LOGGER.info(
+        "canonical shape=(%d, %d), transform=%s, fingerprint=%s",
+        height,
+        width,
+        transform,
+        grid_fp,
+    )
 
     # --- read source centroids ---
     LOGGER.info("reading raw grid: %s", raw_grid_path)
     gdf = gpd.read_file(raw_grid_path)
     if not (gdf.geom_type == "Point").all():
         raise ValueError(f"{raw_grid_path}: expected POINT centroids")
+    # Infer origin CRS from the raw file. Fail loudly if the file declares no CRS.
     if gdf.crs is None:
-        gdf.set_crs(epsg=origin_epsg, inplace=True)
-    elif gdf.crs.to_epsg() != origin_epsg:
-        LOGGER.warning(
-            "raw grid declares EPSG:%s but config origin_crs=EPSG:%d — trusting config",
-            gdf.crs.to_epsg(),
-            origin_epsg,
+        raise ValueError(
+            f"{raw_grid_path}: raw grid declares no CRS. "
+            "SpaceAgg expects the publisher's distribution file to declare a CRS; "
+            "if your publisher omits it, set the CRS manually with a one-off "
+            "preprocessing step or report it as a per-source workaround."
         )
-        gdf.set_crs(epsg=origin_epsg, allow_override=True, inplace=True)
+    origin_epsg = gdf.crs.to_epsg()
+    LOGGER.info("inferred origin_crs=EPSG:%s from raw file", origin_epsg)
+
     if "fid" not in gdf.columns:
         gdf = gdf.reset_index().rename(columns={"index": "fid"})
         gdf["fid"] = gdf["fid"] + 1  # publisher's `idx` is 1-based; align with .dat line number
 
-    if target_epsg != origin_epsg:
-        LOGGER.info("reprojecting centroids to EPSG:%d", target_epsg)
+    if origin_epsg != target_epsg:
+        LOGGER.info("reprojecting centroids EPSG:%s → EPSG:%d", origin_epsg, target_epsg)
         gdf = gdf.to_crs(epsg=target_epsg)
 
     src_x = gdf.geometry.x.to_numpy()
@@ -149,6 +190,13 @@ def build(cfg: DictConfig) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     lookup.to_parquet(out_path, index=False)
     LOGGER.info("wrote %s (%d rows)", out_path, len(lookup))
+
+    # --- emit grid.json (minimal per DD-16) ---
+    grid_json_path.write_text(json.dumps({
+        "fingerprint": grid_fp,
+        "fingerprint_description": _GRID_FINGERPRINT_DESCRIPTION,
+    }, indent=2))
+    LOGGER.info("wrote %s (fingerprint=%s)", grid_json_path, grid_fp)
 
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)

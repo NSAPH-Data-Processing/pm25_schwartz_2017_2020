@@ -29,6 +29,8 @@ yearly_archive = f"{base_path}/raw/grids/annual-dat.zip"
 
 # Precomputed resample lookup (built once per cadence; reused per surface).
 grid_resample_lookup = f"{base_path}/input/grids/{temporal_freq}/grid_resample_lookup.parquet"
+# Per-cadence canonical grid sidecar (DD-16: fingerprint + algorithm description).
+grid_json = f"{base_path}/input/grids/{temporal_freq}/grid.json"
 
 grid_pattern = (
     f"{base_path}/input/grids/{temporal_freq}/"
@@ -79,6 +81,7 @@ rule unzip_yearly:
 rule build_grid_resample_lookup:
     output:
         lookup=grid_resample_lookup,
+        json=grid_json,
     log:
         "logs/build_grid_resample_lookup.log",
     shell:
@@ -105,23 +108,12 @@ rule standardize_grid:
 
 rule standardize_polygons:
     output:
-        polygons_pattern,
+        gpkg=polygons_pattern,
+        json=polygons_json_pattern,
     log:
         f"logs/standardize_polygons_{polygon_name}_{{year}}.log",
     shell:
         "PYTHONPATH=. python src/standardize_polygons.py "
-        f"{script_overrides} +year={{wildcards.year}} &> {{log}}"
-
-
-rule generate_polygons_json:
-    input:
-        polygons_pattern,
-    output:
-        polygons_json_pattern,
-    log:
-        f"logs/generate_polygons_json_{polygon_name}_{{year}}.log",
-    shell:
-        "PYTHONPATH=. python src/generate_polygons_json.py "
         f"{script_overrides} +year={{wildcards.year}} &> {{log}}"
 
 

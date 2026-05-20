@@ -1,16 +1,17 @@
 temporal_freq: daily
 
-# Variable mapping: raw_name → standardised input_name.
+# Variable map (DD-15): keyed by the SpaceAgg-standardised name. Each entry
+# carries the publisher's raw zip + per-day filename patterns for this cadence.
+# `zip:` is the path to the monthly zip archive; `file:` is the path INSIDE the
+# zip (also relative to {base_path}/raw/grids/ after extraction).
 variables:
-  PM25: pm25
+  pm25:
+    zip:  daily-dat/PM25-{year}-{month}.zip
+    file: daily-dat/PM25-{year}-{month}/PM25-{year}-{month}-{day}.dat
 
-# Raw publisher artefacts. Paths are relative to {base_path}/raw/grids/.
 raw:
-  filenames:
-    daily_archive: daily-dat/PM25-{year}-{month:02d}.zip
-    daily_member: daily-dat/PM25-{year}-{month:02d}/PM25-{year}-{month:02d}-{day:02d}.dat
   grid:
-    origin_crs: 4326
+    # origin_crs is inferred from the raw file's declared CRS (DD-14).
     filename: grid.gpkg
 
 # Standardised inputs. Case C per DD-9 / skills/crs.md (centroids in 4326,
