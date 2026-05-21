@@ -10,10 +10,7 @@ The pipeline takes the publisher's raw centroid grid + per-day / per-year value 
 # 1. Materialise the data tree (symlinks vs real dirs per `datapaths` choice)
 python utils/create_dir_paths.py
 
-# 2. Run the Standardize-grids + Standardize-polygons sections only (test Snakefile)
-snakemake --snakefile test.smk --cores 4
-
-# 3. Run the full workflow including aggregation
+# 2. Run the full workflow (Standardize grids + Standardize polygons + Build mapping + Aggregate)
 snakemake --cores 4
 ```
 
@@ -102,8 +99,7 @@ The final aggregated outputs — per (variable, polygon, timestamp) parquet file
 ```
 pm25_schwartz_2017_2020/
 ├── README.md                # this file
-├── Snakefile                # canonical workflow (DD-13 sections)
-├── test.smk                 # section-scoped test Snakefile
+├── Snakefile                # full pipeline (DD-13 sections, yearly + daily)
 ├── snakemake.yaml           # per-cadence sections (yearly years, daily interval)
 ├── requirements.yaml        # conda environment
 ├── conf/                    # Hydra config tree (datapaths/, grids/, polygons/, _global/)
@@ -111,6 +107,7 @@ pm25_schwartz_2017_2020/
 │   ├── build_grid_resample_lookup.py
 │   ├── standardize_grid.py
 │   ├── standardize_polygons.py
+│   ├── build_polygon_cell_mapping.py
 │   └── aggregate.py
 ├── utils/
 │   └── create_dir_paths.py  # one-time data tree materialisation (DD-5 / DD-6)
