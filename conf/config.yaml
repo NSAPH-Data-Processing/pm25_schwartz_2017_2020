@@ -5,16 +5,23 @@ defaults:
 show_progress: false
 plot_output: false
 
+# DD-17c: output filename prefix (everything before __<year>.parquet).
+# Template is a Python format string; {polygon_name} and {temporal_freq} are
+# filled at Snakefile compose time from cfg.polygons.polygon_name and
+# cfg.grids.temporal_freq. The Snakefile then appends __<year>.parquet per
+# DD-17a's enforced per-year partitioning.
+output_name: "pm25__schwartz__{polygon_name}_{temporal_freq}"
+
 # Aggregation parameters (see 08_spatial_aggregations.md §2b).
 # Default upsample policy for all-touched rasterization. Bundles in _global/
 # can override (e.g., `upsample: {k: 16}`) when a specific run needs different
 # behavior.
 upsample:
-  target_samples: 100   # minimum effective sample count per polygon
-  quantile: 0.10        # area quantile to satisfy
+  k: 16                 # explicit K (auto-derivation from polygon-area distribution is deferred)
+  target_samples: 100   # minimum effective sample count per polygon — used by future auto-derivation
+  quantile: 0.10        # area quantile to satisfy — used by future auto-derivation
   k_min: 1
   k_max: 16
-  # k: 16               # optional explicit override; skips auto-derivation
 
 hydra:
   run:
