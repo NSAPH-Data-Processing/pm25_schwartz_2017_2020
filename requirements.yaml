@@ -1,6 +1,7 @@
 name: pm25_schwartz_2017_2020
 channels:
   - conda-forge
+  - bioconda
 dependencies:
   - python=3.11
   - snakemake-minimal
