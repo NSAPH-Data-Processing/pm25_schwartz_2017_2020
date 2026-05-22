@@ -24,6 +24,7 @@
 #
 # Run with: snakemake --cores N
 
+import os
 from datetime import date, timedelta
 
 from hydra import compose, initialize
@@ -90,6 +91,10 @@ daily_archive_pattern = (
 daily_dat_pattern = (
     f"{base_path}/raw/grids/" + _daily_file_template
 )
+# Parent directory of the per-day .dat (e.g. data/raw/grids/daily-dat/PM25-{year}-{month}).
+# Used as the per-month `unzip_daily` checkpoint output so the checkpoint and the
+# downstream .dat path stay coupled to the conf template.
+daily_dat_dir_pattern = os.path.dirname(daily_dat_pattern)
 daily_lookup = f"{base_path}/input/grids/{daily_freq}/grid_resample_lookup.parquet"
 daily_grid_json = f"{base_path}/input/grids/{daily_freq}/grid.json"
 daily_grid_pattern = (
@@ -259,21 +264,26 @@ rule standardize_grid_yearly:
 # Standardize grids — daily
 #### ####
 
-rule unzip_daily:
+# Per-month checkpoint: one unzip per (year, month) instead of per-day.
+# Snakemake would otherwise fire the rule 28–31 times per monthly zip, re-opening
+# the same archive for each .dat. The checkpoint emits the month directory; the
+# downstream `_daily_dat_for_timestamp` input function pulls the specific .dat.
+#
+# Upstream daily zips have inconsistent internal layouts: 2017–2018 nest under
+# 'daily-dat/PM25-YYYY-MM/'; 2019–2020 use 'PM25-YYYY-MM/'. The '*PM25-…' glob
+# + `unzip -j` flatten either layout into the canonical destination.
+checkpoint unzip_daily:
     input:
         archive=daily_archive_pattern,
     output:
-        dat=daily_dat_pattern,
+        month_dir=directory(daily_dat_dir_pattern),
     log:
-        f"logs/unzip_daily_{{year}}-{{month}}-{{day}}.log",
+        f"logs/unzip_daily_{{year}}-{{month}}.log",
     shell:
-        # Upstream daily zips have inconsistent internal layouts:
-        # 2017–2018 nest under 'daily-dat/PM25-YYYY-MM/'; 2019–2020 use
-        # 'PM25-YYYY-MM/'. Match by basename in either location and junk
-        # paths so the file lands at the canonical destination.
+        "mkdir -p {output.month_dir} && "
         "unzip -joq {input.archive} "
-        "'*PM25-{wildcards.year}-{wildcards.month}-{wildcards.day}.dat' "
-        "-d $(dirname {output.dat}) &> {log}"
+        "'*PM25-{wildcards.year}-{wildcards.month}-*.dat' "
+        "-d {output.month_dir} &> {log}"
 
 
 rule build_grid_resample_lookup_daily:
@@ -288,8 +298,17 @@ rule build_grid_resample_lookup_daily:
 
 
 def _daily_dat_for_timestamp(wildcards):
+    # Triggers the per-month `unzip_daily` checkpoint and returns the specific
+    # .dat for this timestamp. The checkpoint blocks until the month directory
+    # exists, then we point at the .dat inside (basename derived from the
+    # conf-driven daily_dat_pattern so both rules stay coupled to the template).
     ts = wildcards.timestamp
-    return daily_dat_pattern.format(year=ts[:4], month=ts[4:6], day=ts[6:8])
+    yyyy, mm, dd = ts[:4], ts[4:6], ts[6:8]
+    month_dir = checkpoints.unzip_daily.get(year=yyyy, month=mm).output[0]
+    basename = os.path.basename(
+        daily_dat_pattern.format(year=yyyy, month=mm, day=dd)
+    )
+    return f"{month_dir}/{basename}"
 
 
 rule standardize_grid_daily:

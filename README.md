@@ -25,7 +25,7 @@ The daily zip archives have **inconsistent internal layouts across years**:
 - **2017–2018** nest `.dat` files under `daily-dat/PM25-YYYY-MM/...` inside the zip.
 - **2019–2020** drop the `daily-dat/` prefix and use `PM25-YYYY-MM/...`.
 
-The `unzip_daily` rule in the Snakefile handles both — it matches by basename (`*PM25-YYYY-MM-DD.dat`) and uses `unzip -j` to junk the in-zip path, so the file always lands at the canonical Snakemake destination. If you swap in a fresh upstream archive and unzip fails with `caution: filename not matched`, check whether the upstream changed the internal layout again and adjust the glob in `Snakefile`'s `unzip_daily` rule accordingly.
+The `unzip_daily` rule in the Snakefile handles both — it's a `checkpoint` that fires once per (year, month), matching all daily `.dat`s in that month by basename (`*PM25-YYYY-MM-*.dat`) and using `unzip -j` to junk the in-zip path so files always land at the canonical destination. If you swap in a fresh upstream archive and unzip fails with `caution: filename not matched`, check whether the upstream changed the internal layout again and adjust the glob in `Snakefile`'s `unzip_daily` rule accordingly.
 
 ## What this pipeline produces
 
