@@ -18,6 +18,7 @@ dependencies:
   - scipy
   - pyarrow
   - tqdm
+  - matplotlib
   - pip
   - pip:
       - pytest
