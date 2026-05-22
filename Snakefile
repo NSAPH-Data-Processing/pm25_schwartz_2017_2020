@@ -264,13 +264,16 @@ rule unzip_daily:
         archive=daily_archive_pattern,
     output:
         dat=daily_dat_pattern,
-    params:
-        member=_daily_file_template,  # has {year}/{month}/{day} — Snakemake substitutes from wildcards
     log:
         f"logs/unzip_daily_{{year}}-{{month}}-{{day}}.log",
     shell:
-        "unzip -o {input.archive} '{params.member}' "
-        f"-d {base_path}/raw/grids/ &> {{log}}"
+        # Upstream daily zips have inconsistent internal layouts:
+        # 2017–2018 nest under 'daily-dat/PM25-YYYY-MM/'; 2019–2020 use
+        # 'PM25-YYYY-MM/'. Match by basename in either location and junk
+        # paths so the file lands at the canonical destination.
+        "unzip -joq {input.archive} "
+        "'*PM25-{wildcards.year}-{wildcards.month}-{wildcards.day}.dat' "
+        "-d $(dirname {output.dat}) &> {log}"
 
 
 rule build_grid_resample_lookup_daily:
