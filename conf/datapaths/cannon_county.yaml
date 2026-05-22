@@ -2,10 +2,7 @@ base_path: data/county
 
 dirs:
   raw:
-    grids:
-      daily:   /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/daily
-      monthly: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/monthly
-      yearly:  /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/yearly
+    grids: /n/dominici_lab/lab/lego/environmental/pm25__schwartz/raw/grids
     polygons: /n/dominici_lab/lab/lego/geoboundaries/us_geoboundaries__census/raw/county
   input:
     grids:
