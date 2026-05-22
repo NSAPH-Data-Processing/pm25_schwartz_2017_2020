@@ -10,14 +10,22 @@ The pipeline takes the publisher's raw centroid grid + per-day / per-year value 
 # 1. Materialise the data tree (symlinks vs real dirs per `datapaths` choice)
 python utils/create_dir_paths.py
 
-# 2. Run the Standardize-grids + Standardize-polygons sections only (test Snakefile)
-snakemake --snakefile test.smk --cores 4
+# 2. place the raw grids and polygons in the corrensponding folders data/raw/grids and data/raw/polygons.
 
-# 3. Run the full workflow including aggregation
+# 2. Run the full workflow (Standardize grids + Standardize polygons + Build mapping + Aggregate)
 snakemake --cores 4
 ```
 
 `snakemake.yaml` declares the target enumeration per cadence (`yearly.years`, `daily.start/end`). Edit it to change what gets generated.
+
+## Known upstream quirks
+
+The daily zip archives have **inconsistent internal layouts across years**:
+
+- **2017–2018** nest `.dat` files under `daily-dat/PM25-YYYY-MM/...` inside the zip.
+- **2019–2020** drop the `daily-dat/` prefix and use `PM25-YYYY-MM/...`.
+
+The `unzip_daily` rule in the Snakefile handles both — it matches by basename (`*PM25-YYYY-MM-DD.dat`) and uses `unzip -j` to junk the in-zip path, so the file always lands at the canonical Snakemake destination. If you swap in a fresh upstream archive and unzip fails with `caution: filename not matched`, check whether the upstream changed the internal layout again and adjust the glob in `Snakefile`'s `unzip_daily` rule accordingly.
 
 ## What this pipeline produces
 
@@ -89,21 +97,45 @@ mtime-based caches (Snakemake's default) can't do any of this; the fingerprint i
 - *Not a checksum of file bytes.* GPKG / GeoTIFF binaries include implementation details (compression, internal ordering) that aren't part of the logical content. The fingerprint hashes the *logical* content (sorted IDs, sorted geometry hashes) so two byte-different files holding the same data still match.
 - *Not cryptographically secure.* 64 bits is enough for accidental-collision detection across the pipeline's lifetime of artefacts; SpaceAgg's threat model is "developer mistakes and silent publisher changes", not adversarial collisions.
 
-### `data/intermediate/.mappings/`
+### `data/intermediate/<temporal_freq>/`
 
-The polygon→cell mapping cache, keyed by `(grid_fp, polygons_fp, K)`. Built once per `(grid, polygons, K)` triple by `aggregate.py` and reused for every surface that shares the triple.
+Per-cadence intermediates, two kinds of artefact in the same folder:
+
+```
+data/intermediate/yearly/
+├── mapping__zcta__2018__k14.parquet   # polygon→cell mapping (DD-11), one per (polygon, year, K)
+├── mapping__zcta__2018__k14.json      # mapping sidecar — K, fingerprints, derivation params
+├── pm25__zcta__2018.parquet           # per-(variable, timestamp) aggregate intermediate
+└── …
+```
+
+- **Mapping cache** — `mapping__<polygon>__<year>__k<K>.{parquet,json}`, built once per `(polygon, year, K)` by `build_polygon_cell_mapping.py` and reused for every surface that shares the triple. Cadence-partitioned because the mapping depends on the canonical grid, which is declared per-cadence (see SpaceAgg DD-11).
+- **Per-(variable, timestamp) aggregates** — `<variable>__<polygon>__<timestamp>.parquet`, written by `aggregate.py`. Carry the per-polygon value plus quality columns (`valid_fraction`, `effective_samples`) for debugging. These are consumed by `reshape.py` to produce the LEGO-compliant per-year output below.
 
 ### `data/output/<temporal_freq>/`
 
-The final aggregated outputs — per (variable, polygon, timestamp) parquet files with per-polygon values + `valid_fraction` + `effective_samples` (SpaceAgg DD-11).
+The LEGO-compliant final outputs (SpaceAgg DD-17), one parquet per data year:
+
+```
+data/output/yearly/
+├── pm25__schwartz__zcta_yearly__2017.parquet
+├── pm25__schwartz__zcta_yearly__2018.parquet
+├── pm25__schwartz__zcta_yearly__2019.parquet
+└── pm25__schwartz__zcta_yearly__2020.parquet
+data/output/daily/
+└── pm25__schwartz__zcta_daily__2018.parquet   # 33,144 polygons × 90 days
+```
+
+Filename pattern: `<output_name>__<year>.parquet`, where `<output_name>` is the templated prefix declared in `conf/config.yaml` (`pm25__schwartz__{polygon_name}_{temporal_freq}` resolved at Snakefile compose time). Per-year partitioning is mandatory regardless of cadence — sub-yearly cadences encode the time-slice as a column inside the file.
+
+Column schema (DD-17b): `[<polygon_name>, <time>, <variable>(s)]`, in that order. Time column varies with cadence — `year` (int32) for yearly, `year + month` for monthly, `date` (timestamp ms) for daily. Variable columns are float32. **Quality columns (`valid_fraction`, `effective_samples`) are intentionally NOT in the output** — they live in the per-(variable, timestamp) intermediates above.
 
 ## Layout of the repo
 
 ```
 pm25_schwartz_2017_2020/
 ├── README.md                # this file
-├── Snakefile                # canonical workflow (DD-13 sections)
-├── test.smk                 # section-scoped test Snakefile
+├── Snakefile                # full pipeline (DD-13 sections, yearly + daily)
 ├── snakemake.yaml           # per-cadence sections (yearly years, daily interval)
 ├── requirements.yaml        # conda environment
 ├── conf/                    # Hydra config tree (datapaths/, grids/, polygons/, _global/)
@@ -111,7 +143,9 @@ pm25_schwartz_2017_2020/
 │   ├── build_grid_resample_lookup.py
 │   ├── standardize_grid.py
 │   ├── standardize_polygons.py
-│   └── aggregate.py
+│   ├── build_polygon_cell_mapping.py
+│   ├── aggregate.py           # per-(variable, timestamp) intermediates
+│   └── reshape.py             # intermediates → LEGO per-year output (DD-17)
 ├── utils/
 │   └── create_dir_paths.py  # one-time data tree materialisation (DD-5 / DD-6)
 └── data/                    # the data tree — see data/README.md

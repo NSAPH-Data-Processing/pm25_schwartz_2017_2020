@@ -2,10 +2,7 @@ base_path: data
 
 dirs:
   raw:
-    grids:
-      daily: null
-      monthly: null
-      yearly: null
+    grids: null
     polygons: null
   input:
     grids:
