@@ -10,6 +10,8 @@ The pipeline takes the publisher's raw centroid grid + per-day / per-year value 
 # 1. Materialise the data tree (symlinks vs real dirs per `datapaths` choice)
 python utils/create_dir_paths.py
 
+# 2. place the raw grids and polygons in the corrensponding folders data/raw/grids and data/raw/polygons.
+
 # 2. Run the full workflow (Standardize grids + Standardize polygons + Build mapping + Aggregate)
 snakemake --cores 4
 ```
